@@ -1,17 +1,12 @@
 
 'use server';
 
-import { adminDb, adminMessaging } from './firebase-admin';
+import { adminDb, adminMessaging, isFirebaseAdminInitialized } from './firebase-admin';
 
 interface NotificationPayload {
     title: string;
     body: string;
     url?: string;
-}
-
-// A simple check to see if the admin SDK is initialized.
-export function isFirebaseAdminInitialized() {
-  return !!adminMessaging;
 }
 
 export async function sendNotification({ title, body, url }: NotificationPayload) {

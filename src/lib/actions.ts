@@ -8,7 +8,8 @@ import {
 } from '@/lib/types';
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
-import { sendNotification, isFirebaseAdminInitialized } from './notifications';
+import { sendNotification } from './notifications';
+import { isFirebaseAdminInitialized } from './firebase-admin';
 
 export async function submitContactForm(
   data: z.infer<typeof contactFormSchema>

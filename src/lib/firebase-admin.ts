@@ -45,5 +45,9 @@ if (serviceAccountKey) {
     console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is not set. Firebase Admin SDK is not initialized. Server-side Firebase operations will not work.");
 }
 
+// A simple check to see if the admin SDK is initialized.
+export function isFirebaseAdminInitialized() {
+  return !!adminMessaging;
+}
 
 export { adminDb, adminAuth, adminMessaging };
