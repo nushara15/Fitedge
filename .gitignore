@@ -33,10 +33,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# studio
-.cache
+# service account key
+serviceAccountKey.json
 src/lib/serviceAccountKey.json
