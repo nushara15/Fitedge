@@ -9,9 +9,18 @@ interface NotificationPayload {
     url?: string;
 }
 
+// A simple check to see if the admin SDK is initialized.
+export function isFirebaseAdminInitialized() {
+  return !!adminMessaging;
+}
+
 export async function sendNotification({ title, body, url }: NotificationPayload) {
+  if (!isFirebaseAdminInitialized()) {
+    console.warn("Firebase Admin SDK not initialized. Skipping notification.");
+    return;
+  }
   try {
-    const tokensSnapshot = await adminDb.collection('fcm_tokens').get();
+    const tokensSnapshot = await adminDb!.collection('fcm_tokens').get();
     const tokens = tokensSnapshot.docs.map(doc => doc.data().token);
 
     if (tokens.length === 0) {
@@ -35,7 +44,7 @@ export async function sendNotification({ title, body, url }: NotificationPayload
       tokens: tokens,
     };
 
-    const response = await adminMessaging.sendEachForMulticast(message);
+    const response = await adminMessaging!.sendEachForMulticast(message);
     console.log('Successfully sent message:', response);
 
     if (response.failureCount > 0) {

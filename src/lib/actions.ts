@@ -1,3 +1,4 @@
+
 'use server';
 import { z } from 'zod';
 import {
@@ -7,7 +8,7 @@ import {
 } from '@/lib/types';
 import { db } from './firebase';
 import { collection, addDoc, serverTimestamp, doc, deleteDoc } from 'firebase/firestore';
-import { sendNotification } from './notifications';
+import { sendNotification, isFirebaseAdminInitialized } from './notifications';
 
 export async function submitContactForm(
   data: z.infer<typeof contactFormSchema>
@@ -19,17 +20,19 @@ export async function submitContactForm(
   }
 
   try {
-    await addDoc(collection(db, 'contacts'), {
+    const docRef = await addDoc(collection(db, 'contacts'), {
       ...result.data,
       submittedAt: serverTimestamp(),
       status: 'New',
     });
     // Send notification to admins
-    await sendNotification({
-      title: 'New Contact Message',
-      body: `You received a new message from ${result.data.name}.`,
-      url: '/admin/messages',
-    });
+    if (isFirebaseAdminInitialized()) {
+      await sendNotification({
+        title: 'New Contact Message',
+        body: `You received a new message from ${result.data.name}.`,
+        url: `/admin/messages/${docRef.id}`,
+      });
+    }
     return { success: true, data: result.data };
   } catch (error) {
     console.error('Error adding document: ', error);
@@ -88,6 +91,15 @@ export async function calculateMacros(
 
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  if (isFirebaseAdminInitialized()) {
+    await sendNotification({
+        title: 'Macro Calculation',
+        body: `A user just calculated their macros for the goal: ${goal}.`,
+        url: '/admin/analytics',
+      });
+  }
+
 
   return {
     success: true,
@@ -118,11 +130,13 @@ export async function submitPurchaseForm(
     });
     console.log("Document written with ID: ", docRef.id);
      // Send notification to admins
-    await sendNotification({
-        title: 'New Purchase Inquiry!',
-        body: `${result.data.firstName} is interested in the ${result.data.serviceName} plan.`,
-        url: `/admin/purchases/${docRef.id}`,
-    });
+    if (isFirebaseAdminInitialized()) {
+      await sendNotification({
+          title: 'New Purchase Inquiry!',
+          body: `${result.data.firstName} is interested in the ${result.data.serviceName} plan.`,
+          url: `/admin/purchases/${docRef.id}`,
+      });
+    }
     return { success: true, data: result.data };
   } catch (error) {
     console.error('Error adding document to Firestore: ', error);
@@ -131,6 +145,9 @@ export async function submitPurchaseForm(
 }
 
 export async function deleteDocument(collectionName: string, docId: string) {
+  if (!isFirebaseAdminInitialized()) {
+    return { success: false, error: 'Admin SDK not initialized.' };
+  }
   try {
     await deleteDoc(doc(db, collectionName, docId));
     return { success: true };
@@ -143,6 +160,9 @@ export async function deleteDocument(collectionName: string, docId: string) {
 export async function saveFcmToken(token: string) {
   if (!token) {
     return { success: false, error: 'Invalid token provided.' };
+  }
+   if (!isFirebaseAdminInitialized()) {
+    return { success: false, error: 'Admin SDK not initialized.' };
   }
   try {
     // Check if token already exists to avoid duplicates
